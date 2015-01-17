@@ -202,6 +202,9 @@ public:
 
     bool searchable() const { return _blockChain.script_to_unspents(); }
     void searchable(bool s) { _blockChain.script_to_unspents(s); }
+    
+    bool namesOnly() const { return _names_only; }
+    void namesOnly(bool n);
 
     /// Async invocation
     void handle_block();
@@ -230,6 +233,7 @@ private:
     void update_verification();
     void update_validation();
     void update_persistence();
+    void update_namesOnly();
     
     /// The data directory holding the block file, the address file, the database and logfiles
     std::string _dataDir;
@@ -294,6 +298,7 @@ private:
     Strictness _verification;
     Strictness _validation;
     Strictness _persistence;
+    bool _names_only;
 };
 
 #endif // NODE_H

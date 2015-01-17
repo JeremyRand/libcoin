@@ -138,6 +138,7 @@ int main(int argc, char* argv[])
         node.validation(conf.validation());
         node.persistence(conf.persistence());
         node.searchable(conf.searchable());
+        node.namesOnly(conf.namesOnly());
 
         PortMapper mapper(node.get_io_service(), conf.node_port()); // this will use the Node call
         if(conf.portmap()) mapper.start();

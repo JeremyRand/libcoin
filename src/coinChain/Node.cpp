@@ -229,6 +229,15 @@ void Node::update_persistence() {
     }
 }
 
+void Node::namesOnly(bool n) {
+    _names_only = n;
+    update_namesOnly();
+}
+
+void Node::update_namesOnly() {
+    _blockChain.names_only(_names_only);
+}
+
 void Node::run() {
     Logger::label_thread(_blockChain.chain().name());
     // The io_service::run() call will block until all asynchronous operations

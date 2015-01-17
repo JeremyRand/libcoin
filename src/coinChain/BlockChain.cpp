@@ -50,7 +50,8 @@ BlockChain::BlockChain(const Chain& chain, const string dataDir) :
     _chain(chain),
     _lazy_purging(false),
     _purge_depth(0), // means no purging - i.e.
-    _verification_depth(_chain.totalBlocksEstimate())
+    _verification_depth(_chain.totalBlocksEstimate()),
+    _names_only(false)
 {
     _acceptBlockTimer = 0;
     _connectInputsTimer = 0;

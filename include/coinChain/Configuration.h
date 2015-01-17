@@ -110,6 +110,9 @@ public:
     bool searchable() const {
         return _searchable;
     }
+    bool namesOnly() const {
+        return _names_only;
+    }
     bool help() const {
         return _help;
     }
@@ -133,6 +136,7 @@ private:
     bool _portmap, _gen, _ssl;
     Node::Strictness _verification, _validation, _persistence;
     bool _searchable;
+    bool _names_only;
     bool _help, _version;
     unsigned int _timeout;
     std::string _certchain, _privkey;

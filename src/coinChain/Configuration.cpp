@@ -56,6 +56,7 @@ Configuration::Configuration(int argc, char* argv[], const options_description& 
     ("validation", value<string>(&validation)->default_value("NONE"), "Specify the depth from which MerkleTrie validation hashes are calculated: NONE, MINIMAL: last 100 blocks, CHECKPOINT: last checkpoint, FULL")
     ("persistence", value<string>(&persistence)->default_value("MINIMAL"), "Specify the depth of stored blocks: NONE, MINIMAL: last 100 blocks, LAZY: like MINIMAL, but only purge on restart, CHECKPOINT: last checkpoint, FULL")
     ("searchable", value<bool>(&_searchable)->default_value(true), "Enable indexing of addresses/scripts")
+    ("namesonly", value<bool>(&_names_only)->default_value(false), "Only process names; ignore currency")
     ("pid", value<string>(), "Specify pid file (default: bitcoind.pid)")
     ("nolisten", "Don't accept connections from outside")
     ("noirc", "Don't use IRC to find peers")

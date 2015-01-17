@@ -110,6 +110,9 @@ public:
     int verification_depth() const { return _verification_depth; }
     void verification_depth(int v) { _verification_depth = v; }
     
+    bool names_only() const { return _names_only; }
+    void names_only(bool n) { _names_only = n; }
+    
     /// T R A N S A C T I O N S    
     
     void subscribe(Listener& listener) {
@@ -389,6 +392,8 @@ private:
     int _purge_depth;
 
     int _verification_depth;
+    
+    bool _names_only;
     
     BlockLocator _bestLocator;
     
