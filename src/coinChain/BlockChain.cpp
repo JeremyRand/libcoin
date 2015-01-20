@@ -705,62 +705,118 @@ void BlockChain::postTransaction(const Transaction txn, int64_t& fees, int64_t m
     Confirmation conf(txn, 0, blk.count());
     
     uint256 hash = txn.getHash();
-
+    
     try {
-
+        
         // BIP0016 check - if the block is newer than the BIP0016 date enforce strictPayToScriptHash
         bool strictPayToScriptHash = (blk->time > _chain.timeStamp(Chain::BIP0016));
         
-        if (blk.count() >= _purge_depth)
-            conf.cnf = query("INSERT INTO Confirmations (locktime, version, count, idx) VALUES (?, ?, ?, ?)", txn.lockTime(), txn.version(), blk.count(), idx);
-        else
-            conf.cnf = LOCKTIME_THRESHOLD; // we are downloading the chain - no need to create a confirmation
+        int name_inputs_verified = 0;
         
-        // redeem the inputs
-        const Inputs& inputs = txn.getInputs();
-        int64_t value_in = 0;
         NameOperation name_op(_chain.adhere_names()?!_chain.enforce_name_rules(blk.count()):true);
-        for (size_t in_idx = 0; in_idx < inputs.size(); ++in_idx) {
-            const Input& input = inputs[in_idx];
-            Unspent coin = redeem(input, in_idx, conf); // this will throw in case of doublespend attempts
-            const Output& output = coin.output;
-            int count = coin.count;
-            value_in += output.value();
-
-            // use the name from the UTXO and not from the input - workaround from for bug
-            if (_chain.adhere_names() && name_op.input(output, count))
-                name_op.name(getCoinName(coin.coin));
-            
-            _verifySignatureTimer -= UnixTime::us();
-            
-            if (verify) // this is invocation only - the actual verification takes place in other threads
-                _verifier.verify(output, txn, in_idx, strictPayToScriptHash, 0);
-            
-            _verifySignatureTimer += UnixTime::us();
-        }
         
-        // verify outputs
-        int64_t fee = value_in - txn.getValueOut();
-        if (fee < 0)
-            throw Error("fee < 0");
-        if (fee < min_fee)
-            throw Error("fee < min_fee");
-        fees += fee;
-        if (!_chain.range(fees))
-            throw Error("fees out of range");
-        
-        // issue the outputs
-        const Outputs& outputs = txn.getOutputs();
-        for (size_t out_idx = 0; out_idx < outputs.size(); ++out_idx) {
-            int64_t coin = issue(outputs[out_idx], hash, out_idx, conf); // will throw in case of dublicate (hash,idx)
-            if (_chain.adhere_names() && name_op.output(outputs[out_idx])) {
-                if (txn.version() != NAMECOIN_TX_VERSION)
-                    throw BlockChain::Error("Namecoin scripts only allowed in Namecoin transactions");
-                updateName(name_op, coin, blk.count());
+        if(! names_only() || txn.version() == NAMECOIN_TX_VERSION) // in names-only mode, currency isn't in the database, so don't process those
+        {
+            if (blk.count() >= _purge_depth)
+                conf.cnf = query("INSERT INTO Confirmations (locktime, version, count, idx) VALUES (?, ?, ?, ?)", txn.lockTime(), txn.version(), blk.count(), idx);
+            else
+                conf.cnf = LOCKTIME_THRESHOLD; // we are downloading the chain - no need to create a confirmation
+            
+            // redeem the inputs
+            const Inputs& inputs = txn.getInputs();
+            int64_t value_in = 0;
+            
+            for (size_t in_idx = 0; in_idx < inputs.size(); ++in_idx) {
+                const Input& input = inputs[in_idx];
+                Unspent coin;
+                
+                try 
+                {
+                    coin = redeem(input, in_idx, conf); // this will throw in case of doublespend attempts
+                }
+                catch(Reject e)
+                {
+                    if(! names_only())
+                    {
+                        printf("Redeem error\n");
+                        throw e;
+                    }
+                    
+                    continue;
+                }
+                catch(Error e)
+                {
+                    if(! names_only())
+                    {
+                        printf("Redeem error\n");
+                        throw e;
+                    }
+                    
+                    continue;
+                }
+                
+                const Output& output = coin.output;
+                int count = coin.count;
+                value_in += output.value();
+                
+                // use the name from the UTXO and not from the input - workaround from for bug
+                if (_chain.adhere_names() && name_op.input(output, count))
+                    name_op.name(getCoinName(coin.coin));
+                
+                if(name_op.get_name_script_type(output) > NameOperation::OP_NAME_INVALID)
+                {
+                    name_inputs_verified++;
+                }
+                
+                _verifySignatureTimer -= UnixTime::us();
+                
+                if (verify) // this is invocation only - the actual verification takes place in other threads
+                    _verifier.verify(output, txn, in_idx, strictPayToScriptHash, 0);
+                
+                _verifySignatureTimer += UnixTime::us();
             }
+            
+            if(! names_only()) // in names only mode we don't have access to the inputs, so don't do this
+            {
+                // verify outputs
+                int64_t fee = value_in - txn.getValueOut();
+                if (fee < 0)
+                    throw Error("fee < 0");
+                if (fee < min_fee)
+                    throw Error("fee < min_fee");
+                fees += fee;
+                if (!_chain.range(fees))
+                    throw Error("fees out of range");
+            }
+            
+            // issue the outputs
+            const Outputs& outputs = txn.getOutputs();
+            for (size_t out_idx = 0; out_idx < outputs.size(); ++out_idx) {
+                
+                int script_type = name_op.get_name_script_type(outputs[out_idx]);
+                
+                if(! names_only() || ( _chain.adhere_names() && (script_type > NameOperation::OP_NAME_INVALID) ) )
+                {
+                    if(names_only() && script_type != NameOperation::OP_NAME_NEW && name_inputs_verified == 0)
+                    {
+                        // This is a firstupdate or update but the input name op isn't in the database.  Don't trust it.
+                        continue;
+                    }
+                    
+                    int64_t coin = issue(outputs[out_idx], hash, out_idx, conf); // will throw in case of dublicate (hash,idx)
+                    
+                    if (_chain.adhere_names() && name_op.output(outputs[out_idx])) {
+                        if (txn.version() != NAMECOIN_TX_VERSION)
+                            throw BlockChain::Error("Namecoin scripts only allowed in Namecoin transactions");
+                        updateName(name_op, coin, blk.count());
+                    }
+                }
+                
+            }
+            
+            if (! names_only() && _chain.adhere_names())
+                name_op.check_fees(_chain.network_fee(blk.count()));
         }
-        if (_chain.adhere_names())
-            name_op.check_fees(_chain.network_fee(blk.count()));
     }
     catch (NameOperation::Error& e) {
         throw Error("Error in transaction: " + hash.toString() + "\n\t" + e.what());
@@ -775,6 +831,11 @@ void BlockChain::postTransaction(const Transaction txn, int64_t& fees, int64_t m
 }
 
 void BlockChain::postSubsidy(const Transaction txn, BlockIterator blk, int64_t fees) {
+    
+    if(names_only())
+    {
+        return;
+    }
     
     if (!txn.isCoinBase())
         throw Error("postSubsidy only valid for coinbase transactions.");
