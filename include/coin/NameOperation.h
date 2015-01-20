@@ -57,6 +57,8 @@ public:
     
     bool output(const Output& coin);
     
+    int get_name_script_type(const Output& coin);
+    
     void check_fees(int64_t min_fee) const;
     
     /// the operation tries to reserve a new (or expired) name: OP_NAME_FIRST_UPDATE

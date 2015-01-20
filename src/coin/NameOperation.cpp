@@ -46,6 +46,30 @@ bool NameOperation::input(const Output& coin, int count) {
     }
     return false;
 }
+
+int NameOperation::get_name_script_type(const Output& coin) {
+    Script dropped = coin.script().getDropped();
+    if (!dropped.empty()) {
+        Evaluator eval(_ignore_rules);
+        eval(dropped);
+        
+        if(! eval.was_name_script())
+        {
+            return OP_NAME_INVALID;
+        }
+        if(eval.was_name_new())
+        {
+            return OP_NAME_NEW;
+        }
+        if(eval.was_first_update())
+        {
+            return OP_NAME_FIRSTUPDATE;
+        }
+        return OP_NAME_UPDATE;
+    }
+    return OP_NAME_INVALID;
+}
+
 bool NameOperation::output(const Output& coin) {
     const Script& script = coin.script();
     if (script.size() == 1 && script[0] == OP_RETURN) {
