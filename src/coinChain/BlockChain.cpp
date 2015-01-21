@@ -1273,8 +1273,25 @@ void BlockChain::append(const Block &block) {
         
         // purge spendings in old blocks - we can just as well serve other nodes with blocks if we have them (requires lazy purging)
         if (_purge_depth && !_lazy_purging && blk.count() >= _purge_depth) { // no need to purge during download as we don't store spendings anyway
+            
+            if(names_only())
+            {
+                query("DELETE FROM Names WHERE count <= ?", _purge_depth - _chain.expirationDepth(blk.count()));
+                query("DELETE FROM Unspents WHERE count <= ?", _purge_depth - _chain.expirationDepth(blk.count()));
+                query("DELETE FROM Names WHERE coin IN (SELECT coin FROM Spendings WHERE icnf IN (SELECT cnf FROM Confirmations WHERE count <= ?))", _purge_depth);
+                query("DELETE FROM Spendings WHERE ocnf IN (SELECT cnf FROM Confirmations WHERE count <= ?)", _purge_depth - _chain.expirationDepth(blk.count()) );
+                query("DELETE FROM Names WHERE coin NOT IN (SELECT coin FROM unspents UNION SELECT coin FROM spendings)");
+            }
+            
             query("DELETE FROM Spendings WHERE icnf IN (SELECT cnf FROM Confirmations WHERE count <= ?)", _purge_depth);
             query("DELETE FROM Confirmations WHERE count <= ?", _purge_depth);
+            
+            if(names_only())
+            {
+                query("DELETE FROM Auxproofofworks WHERE count <= ?", _purge_depth - _chain.expirationDepth(blk.count()) );
+                //query("DELETE FROM Blocks WHERE count <= ?", _purge_depth - _chain.expirationDepth(blk.count()) ); // This screws up the block numbering, so don't do it
+            }
+            
             if (_purge_depth == prev_height-_chain.maturity(prev_height))
                 _purge_depth++;
         }
