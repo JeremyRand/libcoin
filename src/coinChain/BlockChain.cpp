@@ -287,6 +287,9 @@ void BlockChain::purge_depth(int purge_depth) {
         query("DELETE FROM Confirmations WHERE count <= ?", purge_to);
         query("COMMIT --PURGING");
     }
+    log_info("Lauching vacuum\n");
+    query("VACUUM"); // Vaccum once every time the purge depth is initialized.  This is potentially redundant, and might be improvable later.
+    log_info("Vacuum complete\n");
 }
 
 void BlockChain::validation_depth(int v) {
