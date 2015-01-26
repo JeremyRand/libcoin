@@ -68,6 +68,8 @@ public:
     
     void name(std::string name) { _name = name; }
 
+    const std::string name_namespace() const;
+    
     const std::string& value() const;
     
 public:

@@ -127,6 +127,48 @@ const std::string& NameOperation::name() const {
     return _name;
 }
 
+const std::string NameOperation::name_namespace() const {
+    
+    size_t slash_index = _name.find_first_of("/");
+    std::string prefix;
+    
+    if(slash_index == std::string::npos)
+    {
+        prefix = "";
+    }
+    else
+    {
+        prefix = _name.substr(0, slash_index);
+    }
+    
+    if(prefix == "d")
+    {
+        if(
+            _name.size() > 65 ||
+            _name.find_first_not_of("abcdefghijklmnopqrstuvwxyz", slash_index+1) == slash_index+1 ||
+            _name.find_last_not_of("abcdefghijklmnopqrstuvwxyz0123456789") == _name.size()-1 ||
+            _name.find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789-", slash_index+1) != std::string::npos
+        )
+        {
+            prefix = "";
+        }
+    }
+    if(prefix == "id")
+    {
+        if(
+            _name.find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789", slash_index+1) == slash_index+1 ||
+            _name.find_last_not_of("abcdefghijklmnopqrstuvwxyz0123456789") == _name.size()-1 ||
+            _name.find_first_not_of("abcdefghijklmnopqrstuvwxyz0123456789-", slash_index+1) != std::string::npos ||
+            _name.find("--") != std::string::npos
+        )
+        {
+            prefix = "";
+        }
+    }
+    
+    return prefix;
+}
+
 const std::string& NameOperation::value() const {
     return _value;
 }
