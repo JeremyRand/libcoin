@@ -797,6 +797,7 @@ void BlockChain::postTransaction(const Transaction txn, int64_t& fees, int64_t m
             for (size_t out_idx = 0; out_idx < outputs.size(); ++out_idx) {
                 
                 int script_type = name_op.get_name_script_type(outputs[out_idx]);
+                bool name_op_output_bool;
                 
                 if(! names_only() || ( _chain.adhere_names() && (script_type > NameOperation::OP_NAME_INVALID) ) )
                 {
@@ -806,9 +807,21 @@ void BlockChain::postTransaction(const Transaction txn, int64_t& fees, int64_t m
                         continue;
                     }
                     
+                    name_op_output_bool = name_op.output(outputs[out_idx]);
+                    
+                    // Filter by namespace whitelist; here it's domain names.  FIXME: make the namespace whitelist a command line argument
+                    if(names_only() && script_type != NameOperation::OP_NAME_NEW)
+                    {
+                        std::string prefix = name_op.name_namespace();
+                        if(prefix != "d" && prefix != "dd")
+                        {
+                            continue;
+                        }
+                    }
+                    
                     int64_t coin = issue(outputs[out_idx], hash, out_idx, conf); // will throw in case of dublicate (hash,idx)
                     
-                    if (_chain.adhere_names() && name_op.output(outputs[out_idx])) {
+                    if (_chain.adhere_names() && name_op_output_bool) {
                         if (txn.version() != NAMECOIN_TX_VERSION)
                             throw BlockChain::Error("Namecoin scripts only allowed in Namecoin transactions");
                         updateName(name_op, coin, blk.count());
