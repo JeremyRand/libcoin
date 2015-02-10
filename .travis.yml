@@ -1,32 +1,44 @@
 language: cpp
+os:
+  - linux
+  - osx
 compiler:
   - gcc
   - clang
 before_install:
-  - sudo add-apt-repository -y ppa:mapnik/boost
-  - sudo apt-get update -qq
+  - if [ $TRAVIS_OS_NAME == "linux" ] ; then sudo add-apt-repository -y ppa:mapnik/boostl; fi
+  - if [ $TRAVIS_OS_NAME == "linux" ] ; then sudo apt-get update -qq; fi
+  - if [ $TRAVIS_OS_NAME == "osx" ] ; then brew update; fi
 install:
-  - sudo apt-get install -y libboost1.49-dev
-  - sudo apt-get install -y libboost-chrono1.49-dev
-  - sudo apt-get install -y libboost-date-time1.49-dev
-  - sudo apt-get install -y libboost-filesystem1.49-dev
-  - sudo apt-get install -y libboost-program-options1.49-dev
-  - sudo apt-get install -y libboost-regex1.49-dev
-  - sudo apt-get install -y libboost-system1.49-dev
-  - sudo apt-get install -y libboost-thread1.49-dev
-  - sudo apt-get install -y libssl-dev
-  - sudo apt-get install -y libsqlite3-dev
-  - sudo apt-get install -y libdb++-dev
+  - if [ $TRAVIS_OS_NAME == "linux" ] ; then sudo apt-get install -y libboost1.49-dev; fi
+  - if [ $TRAVIS_OS_NAME == "linux" ] ; then sudo apt-get install -y libboost-chrono1.49-dev; fi
+  - if [ $TRAVIS_OS_NAME == "linux" ] ; then sudo apt-get install -y libboost-date-time1.49-dev; fi
+  - if [ $TRAVIS_OS_NAME == "linux" ] ; then sudo apt-get install -y libboost-filesystem1.49-dev; fi
+  - if [ $TRAVIS_OS_NAME == "linux" ] ; then sudo apt-get install -y libboost-program-options1.49-dev; fi
+  - if [ $TRAVIS_OS_NAME == "linux" ] ; then sudo apt-get install -y libboost-regex1.49-dev; fi
+  - if [ $TRAVIS_OS_NAME == "linux" ] ; then sudo apt-get install -y libboost-system1.49-dev; fi
+  - if [ $TRAVIS_OS_NAME == "linux" ] ; then sudo apt-get install -y libboost-thread1.49-dev; fi
+  - if [ $TRAVIS_OS_NAME == "linux" ] ; then sudo apt-get install -y libssl-dev; fi
+  - if [ $TRAVIS_OS_NAME == "linux" ] ; then sudo apt-get install -y libsqlite3-dev; fi
+  - if [ $TRAVIS_OS_NAME == "linux" ] ; then sudo apt-get install -y libdb++-dev; fi
+  - if [ $TRAVIS_OS_NAME == "osx" ] ; then brew outdated boost || brew upgrade boost; fi
+  - if [ $TRAVIS_OS_NAME == "osx" ] ; then brew install miniupnpc; fi
+  - if [ $TRAVIS_OS_NAME == "osx" ] ; then brew install https://raw.github.com/homebrew/homebrew/master/Library/Formula/berkeley-db4.rb; fi
+  - if [ $TRAVIS_OS_NAME == "osx" ] ; then brew install homebrew/versions/openssl098; fi
+  - if [ $TRAVIS_OS_NAME == "osx" ] ; then brew install sqlite3; fi
+  - if [ $TRAVIS_OS_NAME == "osx" ] ; then brew outdated cmake || brew upgrade cmake; fi
 script:
   - ./configure && make && sudo make install
-  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64
-  - /usr/local/share/libcoin/bin/blocktree
-  - /usr/local/share/libcoin/bin/claims
-  - /usr/local/share/libcoin/bin/client
-  - /usr/local/share/libcoin/bin/extended_key
-  - /usr/local/share/libcoin/bin/jsonance
-  - /usr/local/share/libcoin/bin/merkletrie
-  - /usr/local/share/libcoin/bin/namecoin
-  - /usr/local/share/libcoin/bin/shamir
-  - /usr/local/share/libcoin/bin/sqliterate
-  - /usr/local/share/libcoin/bin/serialize
+  - if [ $TRAVIS_OS_NAME == "linux" ] ; then export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib64; fi
+  - if [ $TRAVIS_OS_NAME == "linux" ] ; then export INSTALL_PATH=/usr/local/share/libcoin/bin/; fi
+  - if [ $TRAVIS_OS_NAME == "osx" ] ; then export INSTALL_PATH=; fi
+  - ${INSTALL_PATH}blocktree
+  - ${INSTALL_PATH}claims
+  - ${INSTALL_PATH}client
+  - ${INSTALL_PATH}extended_key
+  - ${INSTALL_PATH}jsonance
+  - ${INSTALL_PATH}merkletrie
+  - ${INSTALL_PATH}namecoin
+  - ${INSTALL_PATH}shamir
+  - ${INSTALL_PATH}sqliterate
+  - ${INSTALL_PATH}serialize
